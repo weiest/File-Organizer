@@ -2,7 +2,7 @@ import os, shutil
 class Metadata:
     def __init__(self, absolute_path):
         self.absolute_path = absolute_path
-        self.parent_path = os.path.dirname(os.path.realpath(self.absolute_path))
+        self.parent_path = os.path.dirname(os.path.realpath(self.absolute_path))+"\\"
     
     def exists(self) -> bool:
         return os.path.exists(self.absolute_path)
@@ -13,6 +13,15 @@ class Metadata:
     def rename(self, new_name):
         shutil.move(self.absolute_path, self.parent_path+new_name)
 
+    def move(self, location):
+        shutil.move(self.absolute_path, location)
+
+    def is_file(self) -> bool:
+        return os.path.isfile(self.absolute_path)
+    
+    def is_directory(self) -> bool:
+        return os.path.isdir(self.absolute_path)
+
 class File(Metadata):
     def __init__(self, absolute_path:str):
         super().__init__(absolute_path)
@@ -20,12 +29,22 @@ class File(Metadata):
             raise Exception("Not a file")
         self.full_file_name = os.path.basename(self.absolute_path)
         self.file_name, self.file_extension = os.path.splitext(self.full_file_name)
-        self.directory_path = os.path.dirname(os.path.realpath(self.absolute_path))
+        self.directory_path = os.path.dirname(os.path.realpath(self.absolute_path))+"\\"
     
-    def move(self, new_absolute_path):
-        if not os.path.exists(new_absolute_path):
-            print(f'{new_absolute_path} does not exist')
-        shutil.move(self.absolute_path, new_absolute_path)
+    def move(self, new_location):
+        if (isinstance(new_location, str)):
+            if not os.path.exists(new_location):
+                print(f'{new_location} does not exist')
+            super().move(new_location)
+        elif (isinstance(new_location, Directory)):
+            new_path = new_location.absolute_path+"\\"+self.full_file_name
+            super().move(new_path)
+
+    def rename(self, new_name):
+        new_extension = new_name.rsplit('.', 1)
+        if len(new_extension) == 1:
+            new_name += self.file_extension
+        super().rename(new_name)
 
     def get_extension(self) -> str:
         return self.file_extension
@@ -36,6 +55,7 @@ class File(Metadata):
 class Directory(Metadata):
     def __init__(self, absolute_path:str):
         super().__init__(absolute_path)
+        self.absolute_path = self.absolute_path if self.absolute_path[-1] == "\\" else self.absolute_path + "\\"
         self.folder_name = os.path.basename(self.absolute_path)
 
     def get_files(self) -> list:
@@ -73,8 +93,3 @@ def retrieve(absolute_path):
     elif os.path.isfile(absolute_path):  
         return File(absolute_path)
     return None
-
-if __name__ == '__main__':
-    current_directory = Directory(os. getcwd())
-    for each in current_directory.get_everything():
-        print(each.get_directory().location)
